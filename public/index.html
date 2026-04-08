@@ -61,10 +61,11 @@
             <option value="1">In Progress</option>
             <option value="2">Finished</option>
           </select>
+          <span id="book-count" class="book-count"></span>
         </div>
         <div class="controls-right">
-          <span id="book-count" class="book-count"></span>
-          <button id="new-upload-btn" class="btn-secondary">Upload Another File</button>
+          <button id="new-upload-btn" class="btn-secondary">New Upload</button>
+          <button id="clear-btn" class="btn-danger">Clear</button>
         </div>
       </div>
 
@@ -72,6 +73,7 @@
         <table id="books-table">
           <thead>
             <tr>
+              <th class="col-cover"></th>
               <th data-col="ratingsAverage" class="col-rating sortable active-sort desc">Rating</th>
               <th data-col="title" class="col-title sortable">Title</th>
               <th data-col="author" class="col-author sortable">Author</th>

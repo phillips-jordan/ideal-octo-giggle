@@ -5,22 +5,23 @@
 }
 
 :root {
-  --bg: #f8f7f4;
-  --surface: #ffffff;
-  --border: #e0ddd6;
-  --text: #1a1a1a;
-  --text-muted: #6b6b6b;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --rating-high: #16a34a;
-  --rating-mid: #d97706;
-  --rating-low: #dc2626;
-  --rating-none: #9ca3af;
+  --bg: #0d0f1a;
+  --surface: #13161f;
+  --surface-raised: #1a1d2a;
+  --border: #272b3d;
+  --text: #e2e4f0;
+  --text-muted: #7a7f9a;
+  --accent: #7b96ff;
+  --accent-hover: #96aaff;
+  --rating-high: #4ade80;
+  --rating-mid: #fbbf24;
+  --rating-low: #f87171;
+  --rating-none: #4b5280;
   --status-unread: #6b7280;
-  --status-reading: #2563eb;
-  --status-finished: #16a34a;
+  --status-reading: #7b96ff;
+  --status-finished: #4ade80;
   --radius: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
 }
 
 body {
@@ -54,7 +55,7 @@ header h1 {
 
 main {
   flex: 1;
-  max-width: 960px;
+  max-width: 980px;
   width: 100%;
   margin: 0 auto;
   padding: 2rem 1.5rem;
@@ -93,7 +94,7 @@ footer a:hover {
 #drop-zone:hover,
 #drop-zone.drag-over {
   border-color: var(--accent);
-  background: #eff6ff;
+  background: #161a2e;
 }
 
 #drop-zone input[type="file"] {
@@ -129,10 +130,11 @@ footer a:hover {
 
 code {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  background: #f1f0ed;
+  background: var(--surface-raised);
   padding: 0.1em 0.35em;
   border-radius: 3px;
   font-size: 0.875em;
+  color: var(--accent-hover);
 }
 
 .instructions {
@@ -174,7 +176,7 @@ code {
 
 kbd {
   font-family: inherit;
-  background: #f1f0ed;
+  background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.05em 0.35em;
@@ -183,9 +185,9 @@ kbd {
 
 .error-message {
   margin-top: 1rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: #2a1010;
+  border: 1px solid #5c2020;
+  color: #f87171;
   border-radius: var(--radius);
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
@@ -269,11 +271,28 @@ kbd {
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.12s, border-color 0.12s;
 }
 
 .btn-secondary:hover {
-  background: var(--bg);
+  background: var(--surface-raised);
+  border-color: var(--text-muted);
+}
+
+.btn-danger {
+  font-size: 0.875rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #5c2020;
+  border-radius: var(--radius);
+  background: #2a1010;
+  color: #f87171;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.btn-danger:hover {
+  background: #3a1818;
+  border-color: #f87171;
 }
 
 .table-wrapper {
@@ -297,7 +316,7 @@ thead {
 }
 
 th {
-  background: #f4f3f0;
+  background: var(--surface-raised);
   font-weight: 600;
   text-align: left;
   padding: 0.75rem 1rem;
@@ -342,11 +361,40 @@ tr:last-child td {
 }
 
 tr:nth-child(even) td {
-  background: #fafaf8;
+  background: rgba(255,255,255,0.02);
 }
 
 tr:hover td {
-  background: #f0f4ff;
+  background: rgba(123,150,255,0.07);
+}
+
+/* Cover image */
+.col-cover {
+  width: 52px;
+  padding-right: 0;
+}
+
+.cover-img {
+  display: block;
+  width: 38px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.cover-placeholder {
+  width: 38px;
+  height: 56px;
+  border-radius: 3px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: var(--text-muted);
 }
 
 /* Rating cell */
@@ -379,7 +427,7 @@ tr:hover td {
 
 /* Title / author cells */
 .col-title {
-  min-width: 200px;
+  min-width: 180px;
 }
 
 .col-author {
@@ -401,9 +449,9 @@ tr:hover td {
   white-space: nowrap;
 }
 
-.status-unread   { background: #f3f4f6; color: var(--status-unread); }
-.status-reading  { background: #eff6ff; color: var(--status-reading); }
-.status-finished { background: #f0fdf4; color: var(--status-finished); }
+.status-unread   { background: rgba(107,114,128,0.15); color: var(--status-unread); }
+.status-reading  { background: rgba(123,150,255,0.15); color: var(--status-reading); }
+.status-finished { background: rgba(74,222,128,0.12);  color: var(--status-finished); }
 
 /* Progress cell */
 .col-percent {

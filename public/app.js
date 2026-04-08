@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  const OL_COVER = 'https://covers.openlibrary.org/b/isbn';
+
   // ── State ──────────────────────────────────────────────────────────
   let allBooks = [];
   let sortCol = 'ratingsAverage';
@@ -17,6 +19,7 @@
   const filterStatus$  = document.getElementById('filter-status');
   const bookCount      = document.getElementById('book-count');
   const newUploadBtn   = document.getElementById('new-upload-btn');
+  const clearBtn       = document.getElementById('clear-btn');
   const tbody          = document.getElementById('books-tbody');
   const ths            = document.querySelectorAll('th[data-col]');
 
@@ -77,7 +80,7 @@
     renderTable();
   });
 
-  newUploadBtn.addEventListener('click', () => {
+  function resetToUpload() {
     allBooks = [];
     filterStatus = '';
     sortCol = 'ratingsAverage';
@@ -87,7 +90,10 @@
     uploadError.hidden = true;
     updateSortHeaders();
     showUpload();
-  });
+  }
+
+  newUploadBtn.addEventListener('click', resetToUpload);
+  clearBtn.addEventListener('click', resetToUpload);
 
   ths.forEach((th) => {
     th.addEventListener('click', () => {
@@ -124,7 +130,7 @@
     bookCount.textContent = `${count} book${count !== 1 ? 's' : ''}`;
 
     if (count === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No books match the current filter.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No books match the current filter.</td></tr>';
       return;
     }
 
@@ -155,6 +161,7 @@
   function renderRow(book) {
     const tr = document.createElement('tr');
 
+    tr.appendChild(makeCoverCell(book.isbn));
     tr.appendChild(makeRatingCell(book.ratingsAverage, book.ratingsCount));
     tr.appendChild(makeTextCell(book.title, 'col-title'));
     tr.appendChild(makeTextCell(book.author || '—', 'col-author'));
@@ -162,6 +169,38 @@
     tr.appendChild(makePercentCell(book.percentRead));
 
     return tr;
+  }
+
+  function makeCoverCell(isbn) {
+    const td = document.createElement('td');
+    td.className = 'col-cover';
+
+    if (isbn) {
+      const img = document.createElement('img');
+      img.src = `${OL_COVER}/${isbn}-M.jpg`;
+      img.className = 'cover-img';
+      img.alt = '';
+      img.loading = 'lazy';
+      // Open Library returns a 1×1 transparent gif when no cover exists
+      img.addEventListener('load', () => {
+        if (img.naturalWidth <= 1) img.replaceWith(makePlaceholder());
+      });
+      img.addEventListener('error', () => {
+        img.replaceWith(makePlaceholder());
+      });
+      td.appendChild(img);
+    } else {
+      td.appendChild(makePlaceholder());
+    }
+
+    return td;
+  }
+
+  function makePlaceholder() {
+    const div = document.createElement('div');
+    div.className = 'cover-placeholder';
+    div.textContent = '📖';
+    return div;
   }
 
   function makeRatingCell(avg, count) {
