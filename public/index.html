@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kobo Library Ratings</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Kobo Library Ratings</h1>
+    <p class="subtitle">Rank your Kobo library by community ratings from Open Library</p>
+  </header>
+
+  <main>
+    <!-- Upload Section -->
+    <section id="upload-section">
+      <div id="drop-zone">
+        <input type="file" id="file-input" accept=".sqlite" aria-label="Upload KoboReader.sqlite">
+        <div class="drop-zone-content">
+          <div class="drop-icon">📚</div>
+          <p class="drop-title">Drop your <code>KoboReader.sqlite</code> here</p>
+          <p class="drop-sub">or <label for="file-input" class="browse-link">browse to select</label></p>
+        </div>
+      </div>
+
+      <div class="instructions">
+        <h2>How to find your file</h2>
+        <ol>
+          <li>Connect your Kobo to your computer via USB</li>
+          <li>Open the Kobo drive in your file manager</li>
+          <li>Navigate to the hidden <code>.kobo</code> folder
+            <ul>
+              <li><strong>Windows:</strong> Enable "Show hidden items" in the View menu</li>
+              <li><strong>Mac:</strong> Press <kbd>Cmd+Shift+.</kbd> to show hidden files</li>
+            </ul>
+          </li>
+          <li>Upload the <code>KoboReader.sqlite</code> file found there</li>
+        </ol>
+        <p class="privacy-note">Your file is processed locally on this server and deleted immediately after. Nothing is stored.</p>
+      </div>
+
+      <div id="upload-error" class="error-message" hidden></div>
+    </section>
+
+    <!-- Loading Section -->
+    <section id="loading-section" hidden>
+      <div class="spinner"></div>
+      <p class="loading-text">Fetching ratings from Open Library&hellip;</p>
+      <p class="loading-sub">This may take a moment for large libraries.</p>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results-section" hidden>
+      <div id="controls">
+        <div class="controls-left">
+          <label for="filter-status">Status:</label>
+          <select id="filter-status">
+            <option value="">All books</option>
+            <option value="0">Unread</option>
+            <option value="1">In Progress</option>
+            <option value="2">Finished</option>
+          </select>
+        </div>
+        <div class="controls-right">
+          <span id="book-count" class="book-count"></span>
+          <button id="new-upload-btn" class="btn-secondary">Upload Another File</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="books-table">
+          <thead>
+            <tr>
+              <th data-col="ratingsAverage" class="col-rating sortable active-sort desc">Rating</th>
+              <th data-col="title" class="col-title sortable">Title</th>
+              <th data-col="author" class="col-author sortable">Author</th>
+              <th data-col="readStatus" class="col-status sortable">Status</th>
+              <th data-col="percentRead" class="col-percent sortable">% Read</th>
+            </tr>
+          </thead>
+          <tbody id="books-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Ratings data from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
