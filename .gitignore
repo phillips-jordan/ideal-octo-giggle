@@ -2,3 +2,5 @@ node_modules/
 uploads/
 *.sqlite
 *.db
+# Allow the mock database used for testing
+!mocks/*.sqlite

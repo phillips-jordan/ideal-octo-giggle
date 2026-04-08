@@ -50,6 +50,16 @@ npm run dev
 
 Then open [http://localhost:3000](http://localhost:3000).
 
+## Testing with mock data
+
+A mock database with 20 books is included at `mocks/KoboReader.sqlite` so you can try the app without a real Kobo device. Upload it from the browser like any other file.
+
+To regenerate it (e.g. after changing the book list):
+
+```bash
+node mocks/generate.js
+```
+
 ## How to find your KoboReader.sqlite file
 
 1. Connect your Kobo to your computer via USB
