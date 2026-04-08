@@ -11,7 +11,8 @@ export async function enrichWithRatings(books) {
   const batchCount = Math.ceil(total / CONCURRENCY);
   const gbKey = process.env.GOOGLE_BOOKS_API_KEY;
   log(`Starting: ${total} book${total !== 1 ? 's' : ''} across ${batchCount} batch${batchCount !== 1 ? 'es' : ''} (concurrency=${CONCURRENCY})`);
-  log(`Fallback: Google Books API ${gbKey ? '(with API key)' : '(no API key — set GOOGLE_BOOKS_API_KEY to raise quota)'}`);
+  log(`Primary: Google Books API ${gbKey ? '(with API key)' : '(no API key — set GOOGLE_BOOKS_API_KEY to raise quota)'}`);
+  log(`Fallback: Open Library`);
 
   const results = [];
   let olMatched = 0;
@@ -34,7 +35,7 @@ export async function enrichWithRatings(books) {
           if (ratingSource === 'google') gbMatched++; else olMatched++;
           log(`  ✓ "${book.title}" → ${ratingsAverage.toFixed(2)} ★ (${ratingsCount.toLocaleString()} ratings) [${source}]`);
         } else {
-          log(`  – "${book.title}" → no rating found on Open Library or Google Books`);
+          log(`  – "${book.title}" → no rating found on Google Books or Open Library`);
         }
         results.push({ ...book, ...result.value });
       } else {
@@ -52,7 +53,22 @@ export async function enrichWithRatings(books) {
 }
 
 async function fetchRating(book, gbKey) {
-  // ── Step 1: Open Library ──────────────────────────────────────────
+  // ── Step 1: Google Books (primary) ────────────────────────────────
+  try {
+    const gbData = await fetchGoogleBooksRating(book, gbKey);
+    if (gbData != null) {
+      return {
+        ratingsAverage: gbData.ratingsAverage,
+        ratingsCount: gbData.ratingsCount,
+        olTitle: null,
+        ratingSource: 'google',
+      };
+    }
+  } catch (err) {
+    log(`  ! Google Books lookup failed for "${book.title}": ${err.message}`);
+  }
+
+  // ── Step 2: Open Library fallback ────────────────────────────────
   const olData = book.isbn
     ? await searchOlByIsbn(book.isbn)
     : await searchOlByTitleAuthor(book.title, book.author);
@@ -64,21 +80,6 @@ async function fetchRating(book, gbKey) {
       olTitle: olData.title ?? null,
       ratingSource: 'openlibrary',
     };
-  }
-
-  // ── Step 2: Google Books fallback ─────────────────────────────────
-  try {
-    const gbData = await fetchGoogleBooksRating(book, gbKey);
-    if (gbData != null) {
-      return {
-        ratingsAverage: gbData.ratingsAverage,
-        ratingsCount: gbData.ratingsCount,
-        olTitle: olData?.title ?? null,
-        ratingSource: 'google',
-      };
-    }
-  } catch (err) {
-    log(`  ! Google Books lookup failed for "${book.title}": ${err.message}`);
   }
 
   return {
