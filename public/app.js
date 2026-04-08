@@ -162,7 +162,7 @@
     const tr = document.createElement('tr');
 
     tr.appendChild(makeCoverCell(book.isbn));
-    tr.appendChild(makeRatingCell(book.ratingsAverage, book.ratingsCount));
+    tr.appendChild(makeRatingCell(book.ratingsAverage, book.ratingsCount, book.ratingSource));
     tr.appendChild(makeTextCell(book.title, 'col-title'));
     tr.appendChild(makeTextCell(book.author || '—', 'col-author'));
     tr.appendChild(makeStatusCell(book.readStatus));
@@ -203,7 +203,7 @@
     return div;
   }
 
-  function makeRatingCell(avg, count) {
+  function makeRatingCell(avg, count, source) {
     const td = document.createElement('td');
     td.className = 'col-rating';
 
@@ -221,16 +221,28 @@
     stars.className = 'stars';
     stars.textContent = renderStars(avg);
 
+    const valueRow = document.createElement('span');
+    valueRow.className = 'rating-value-row';
+
     const value = document.createElement('span');
     value.className = `rating-value ${ratingClass}`;
     value.textContent = avg.toFixed(2);
+    valueRow.appendChild(value);
+
+    if (source) {
+      const badge = document.createElement('span');
+      badge.className = `rating-source rating-source-${source}`;
+      badge.textContent = source === 'google' ? 'GB' : 'OL';
+      badge.title = source === 'google' ? 'Google Books' : 'Open Library';
+      valueRow.appendChild(badge);
+    }
 
     const ratingCount = document.createElement('span');
     ratingCount.className = 'rating-count';
     ratingCount.textContent = count > 0 ? `${formatNumber(count)} ratings` : '';
 
     td.appendChild(stars);
-    td.appendChild(value);
+    td.appendChild(valueRow);
     if (count > 0) td.appendChild(ratingCount);
 
     return td;

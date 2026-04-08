@@ -5,4 +5,8 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
+      # Optional: set a free Google Books API key to raise the rating fallback
+      # quota from ~100 unauthenticated req/day to 1,000/day.
+      # Get one at https://console.cloud.google.com/ (Books API, free tier).
+      # - GOOGLE_BOOKS_API_KEY=your_key_here
     restart: unless-stopped

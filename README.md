@@ -87,8 +87,8 @@ Browser → POST /api/upload (KoboReader.sqlite)
   ↓
 parser.js   — opens the SQLite file, queries the content table for epub books
   ↓
-ratings.js  — fetches ratings from Open Library in batches of 5 concurrent requests
-              (by ISBN when available, title + author fallback)
+ratings.js  — fetches ratings from Open Library first; falls back to Google Books
+              for any book OL doesn't have a rating for
   ↓
 router.js   — deletes the uploaded file, returns enriched book list as JSON
   ↓
@@ -102,6 +102,9 @@ Browser     — renders a sortable/filterable table
 | Environment variable | Default | Description |
 |---|---|---|
 | `PORT` | `3000` | Port the server listens on |
+| `GOOGLE_BOOKS_API_KEY` | _(none)_ | Optional. Raises Google Books fallback quota from ~100 to 1,000 req/day |
+
+The app works without a Google Books API key for personal/low-volume use. If you have a large library or run it frequently, get a free key from the [Google Cloud Console](https://console.cloud.google.com/) (enable the Books API, free tier).
 
 To change the port with Docker Compose, edit the `ports` mapping in `docker-compose.yml`. For local runs, set the variable before starting:
 

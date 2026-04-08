@@ -412,6 +412,31 @@ tr:hover td {
 .rating-low  { color: var(--rating-low); }
 .rating-none { color: var(--rating-none); }
 
+.rating-value-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rating-source {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+  cursor: default;
+}
+
+.rating-source-openlibrary {
+  background: rgba(123,150,255,0.15);
+  color: var(--accent);
+}
+
+.rating-source-google {
+  background: rgba(251,191,36,0.15);
+  color: #fbbf24;
+}
+
 .rating-count {
   font-size: 0.75rem;
   color: var(--text-muted);
