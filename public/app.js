@@ -20,6 +20,8 @@
   const bookCount      = document.getElementById('book-count');
   const newUploadBtn   = document.getElementById('new-upload-btn');
   const clearBtn       = document.getElementById('clear-btn');
+  const grBtn          = document.getElementById('gr-btn');
+  const grProgress     = document.getElementById('gr-progress');
   const tbody          = document.getElementById('books-tbody');
   const ths            = document.querySelectorAll('th[data-col]');
 
@@ -74,6 +76,107 @@
     }
   }
 
+  // ── Goodreads scrape ───────────────────────────────────────────────
+  grBtn.addEventListener('click', fetchGoodreadsRatings);
+
+  async function fetchGoodreadsRatings() {
+    if (allBooks.length === 0) return;
+
+    const total = allBooks.length;
+    let done = 0;
+
+    grBtn.disabled = true;
+    grBtn.textContent = 'Fetching…';
+    grProgress.textContent = `0 / ${total}`;
+    grProgress.hidden = false;
+
+    const books = allBooks.map(b => ({ title: b.title, author: b.author, isbn: b.isbn }));
+
+    try {
+      const res = await fetch('/api/goodreads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ books }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+
+      // Read SSE stream line by line
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { value, done: streamDone } = await reader.read();
+        if (streamDone) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete last line
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let payload;
+          try { payload = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (payload.done) {
+            grBtn.textContent = `Goodreads done (${payload.matched}/${payload.total} matched)`;
+            grBtn.disabled = false;
+            grProgress.hidden = true;
+            renderTable(); // final re-sort with all GR data in place
+            return;
+          }
+
+          // Merge GR data into the matching book
+          applyGrResult(payload);
+          done++;
+          grProgress.textContent = `${done} / ${total}`;
+
+          // Re-render only the affected row for smooth progressive updates
+          rerenderBookRow(payload.title, payload.isbn);
+        }
+      }
+    } catch (err) {
+      grBtn.textContent = 'Fetch Goodreads Ratings';
+      grBtn.disabled = false;
+      grProgress.hidden = true;
+      console.error('[goodreads]', err.message);
+    }
+  }
+
+  function applyGrResult(payload) {
+    // Match by ISBN first (exact), fall back to title
+    const book = allBooks.find(b =>
+      (payload.isbn && b.isbn === payload.isbn) || b.title === payload.title
+    );
+    if (!book || payload.error) return;
+
+    book.ratingsAverage = payload.grRating ?? book.ratingsAverage;
+    book.ratingsCount   = payload.grRatingsCount ?? book.ratingsCount;
+    book.grReviewsCount = payload.grReviewsCount ?? 0;
+    if (payload.grRating != null) book.ratingSource = 'goodreads';
+  }
+
+  function rerenderBookRow(title, isbn) {
+    const book = allBooks.find(b =>
+      (isbn && b.isbn === isbn) || b.title === title
+    );
+    if (!book) return;
+
+    // Find the existing <tr> in the current DOM and replace it in-place
+    const rows = tbody.querySelectorAll('tr');
+    for (const row of rows) {
+      const titleCell = row.querySelector('td.col-title');
+      if (titleCell && titleCell.textContent === book.title) {
+        row.replaceWith(renderRow(book));
+        return;
+      }
+    }
+  }
+
   // ── Filter & Sort ──────────────────────────────────────────────────
   filterStatus$.addEventListener('change', () => {
     filterStatus = filterStatus$.value;
@@ -88,6 +191,9 @@
     filterStatus$.value = '';
     fileInput.value = '';
     uploadError.hidden = true;
+    grBtn.textContent = 'Fetch Goodreads Ratings';
+    grBtn.disabled = false;
+    grProgress.hidden = true;
     updateSortHeaders();
     showUpload();
   }
@@ -162,7 +268,7 @@
     const tr = document.createElement('tr');
 
     tr.appendChild(makeCoverCell(book.isbn));
-    tr.appendChild(makeRatingCell(book.ratingsAverage, book.ratingsCount, book.ratingSource));
+    tr.appendChild(makeRatingCell(book.ratingsAverage, book.ratingsCount, book.ratingSource, book.grReviewsCount));
     tr.appendChild(makeTextCell(book.title, 'col-title'));
     tr.appendChild(makeTextCell(book.author || '—', 'col-author'));
     tr.appendChild(makeStatusCell(book.readStatus));
@@ -203,7 +309,7 @@
     return div;
   }
 
-  function makeRatingCell(avg, count, source) {
+  function makeRatingCell(avg, count, source, reviewsCount) {
     const td = document.createElement('td');
     td.className = 'col-rating';
 
@@ -232,20 +338,42 @@
     if (source) {
       const badge = document.createElement('span');
       badge.className = `rating-source rating-source-${source}`;
-      badge.textContent = source === 'google' ? 'GB' : 'OL';
-      badge.title = source === 'google' ? 'Google Books' : 'Open Library';
+      badge.title = sourceName(source);
+      badge.textContent = sourceBadgeLabel(source);
       valueRow.appendChild(badge);
     }
 
-    const ratingCount = document.createElement('span');
-    ratingCount.className = 'rating-count';
-    ratingCount.textContent = count > 0 ? `${formatNumber(count)} ratings` : '';
-
     td.appendChild(stars);
     td.appendChild(valueRow);
-    if (count > 0) td.appendChild(ratingCount);
+
+    if (count > 0) {
+      const ratingCount = document.createElement('span');
+      ratingCount.className = 'rating-count';
+      ratingCount.textContent = `${formatNumber(count)} ratings`;
+      td.appendChild(ratingCount);
+    }
+
+    // Show GR review count when available
+    if (source === 'goodreads' && reviewsCount > 0) {
+      const reviewCount = document.createElement('span');
+      reviewCount.className = 'rating-count';
+      reviewCount.textContent = `${formatNumber(reviewsCount)} reviews`;
+      td.appendChild(reviewCount);
+    }
 
     return td;
+  }
+
+  function sourceBadgeLabel(source) {
+    if (source === 'goodreads') return 'GR';
+    if (source === 'google') return 'GB';
+    return 'OL';
+  }
+
+  function sourceName(source) {
+    if (source === 'goodreads') return 'Goodreads';
+    if (source === 'google') return 'Google Books';
+    return 'Open Library';
   }
 
   function renderStars(avg) {
