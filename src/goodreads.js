@@ -21,13 +21,15 @@ const HEADERS = {
  */
 export async function scrapeBook(book) {
   try {
-    const bookUrl = await findBookUrl(book);
-    if (!bookUrl) {
+    const found = await findBookPage(book);
+    if (!found) {
       log(`  – "${book.title}" → no search result found`);
       return { grRating: null, grRatingsCount: 0, grReviewsCount: 0, error: 'not found' };
     }
 
-    const data = await scrapeBookPage(bookUrl, book.title);
+    // found.html is already available when the search redirected directly to the book page,
+    // saving us a second request.
+    const data = await scrapeBookPage(found.url, found.html, book.title);
     if (data.grRating != null) {
       log(`  ✓ "${book.title}" → ${data.grRating.toFixed(2)} ★ (${data.grRatingsCount.toLocaleString()} ratings, ${data.grReviewsCount.toLocaleString()} reviews)`);
     } else {
@@ -40,8 +42,12 @@ export async function scrapeBook(book) {
   }
 }
 
-async function findBookUrl(book) {
-  // Prefer ISBN search — more precise
+/**
+ * Returns { url, html } for the book page, or null if not found.
+ * html is pre-populated when the search redirected directly to the book page
+ * (common with ISBN queries), avoiding a second HTTP request.
+ */
+async function findBookPage(book) {
   const query = book.isbn
     ? book.isbn
     : [book.title, book.author].filter(Boolean).join(' ');
@@ -49,22 +55,31 @@ async function findBookUrl(book) {
   const searchUrl = `${GR_BASE}/search?q=${encodeURIComponent(query)}`;
   log(`  Searching: ${searchUrl}`);
 
-  const html = await fetchHtml(searchUrl);
-  const $ = cheerio.load(html);
+  const { html, finalUrl } = await fetchPage(searchUrl);
 
-  // Try search results table first
+  // Goodreads often redirects ISBN searches straight to the book page — detect that
+  if (finalUrl.includes('/book/show/')) {
+    log(`  Redirected to book page: ${finalUrl}`);
+    return { url: finalUrl, html };
+  }
+
+  // Otherwise parse the search results listing for the first book link
+  const $ = cheerio.load(html);
   const firstResult = $('table#searchResults tr.bookTitle a').first().attr('href')
     || $('a.bookTitle').first().attr('href');
 
   if (!firstResult) return null;
 
-  // href is relative like /book/show/4671 — make absolute
-  return firstResult.startsWith('http') ? firstResult : `${GR_BASE}${firstResult}`;
+  const bookUrl = firstResult.startsWith('http') ? firstResult : `${GR_BASE}${firstResult}`;
+  return { url: bookUrl, html: null }; // html will be fetched in scrapeBookPage
 }
 
-async function scrapeBookPage(url, title) {
-  log(`  Fetching: ${url}`);
-  const html = await fetchHtml(url);
+async function scrapeBookPage(url, existingHtml, title) {
+  let html = existingHtml;
+  if (!html) {
+    log(`  Fetching: ${url}`);
+    ({ html } = await fetchPage(url));
+  }
   const $ = cheerio.load(html);
 
   // ── Strategy 1: JSON-LD structured data (most reliable) ──────────
@@ -134,7 +149,7 @@ function extractJsonLd($) {
   return result;
 }
 
-async function fetchHtml(url) {
+async function fetchPage(url) {
   const res = await fetch(url, {
     headers: HEADERS,
     signal: AbortSignal.timeout(10000),
@@ -145,7 +160,7 @@ async function fetchHtml(url) {
   if (res.status === 429) throw new Error('Goodreads rate-limited (429)');
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-  return res.text();
+  return { html: await res.text(), finalUrl: res.url };
 }
 
 export function delay(ms = DELAY_MS) {
